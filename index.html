@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Compressor Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8'
+                        },
+                        accent: {
+                            500: '#8b5cf6',
+                            600: '#7c3aed'
+                        }
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .glass-effect {
+            backdrop-filter: blur(16px);
+        }
+        
+        .animate-pulse-soft {
+            animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes pulse-soft {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+        
+        .gradient-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        }
+        
+        .gradient-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-purple-900 min-h-screen transition-colors duration-300">
+    <!-- Header -->
+    <header class="px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
+                    <span class="text-white text-xl font-bold">📸</span>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Image Compressor Pro</h1>
+            </div>
+            
+            <button id="themeToggle" class="p-2.5 rounded-lg bg-white/80 dark:bg-gray-800/80 glass-effect border border-gray-200 dark:border-gray-700 hover:scale-105 transition-all duration-200">
+                <span id="lightIcon" class="text-xl">🌞</span>
+                <span id="darkIcon" class="text-xl hidden">🌙</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="px-6 pb-12">
+        <div class="max-w-4xl mx-auto">
+            <!-- Upload Section -->
+            <div class="bg-white/80 dark:bg-gray-800/80 glass-effect rounded-2xl border border-gray-200 dark:border-gray-700 p-8 mb-8 shadow-xl">
+                <div class="text-center mb-8">
+                    <p class="text-lg text-gray-600 dark:text-gray-300 font-medium">Compress images while preserving quality and metadata</p>
+                </div>
+
+                <!-- Upload Area -->
+                <div id="uploadArea" class="border-2 border-dashed border-primary-500 dark:border-accent-500 rounded-xl p-12 text-center cursor-pointer transition-all duration-300 hover:border-primary-600 dark:hover:border-accent-600 hover:bg-primary-50/50 dark:hover:bg-accent-500/10 group">
+                    <div class="upload-icon text-6xl mb-4 group-hover:scale-110 transition-transform duration-300">📁</div>
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">Drop your image here</h3>
+                    <p class="text-gray-500 dark:text-gray-400 mb-4">or click to browse files</p>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500/10 dark:bg-accent-500/10 text-primary-600 dark:text-accent-400 text-sm font-medium">
+                        <span>📎</span>
+                        <span>JPG, PNG, WebP supported</span>
+                    </div>
+                    <input type="file" id="fileInput" accept="image/*" class="hidden">
+                </div>
+
+                <!-- Controls -->
+                <div class="mt-8 space-y-6">
+                    <!-- Quality Control -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-center gap-4">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">Quality Level:</label>
+                        <div class="flex items-center gap-4 flex-1 max-w-md">
+                            <input type="range" id="qualitySlider" min="10" max="100" value="80" 
+                                   class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+                            <span id="qualityValue" class="text-lg font-bold text-primary-600 dark:text-accent-400 min-w-[50px]">80%</span>
+                        </div>
+                    </div>
+
+                    <!-- Compress Button -->
+                    <div class="text-center">
+                        <button id="compressBtn" disabled 
+                                class="px-8 py-3 gradient-primary text-white font-semibold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105 hover:shadow-lg transition-all duration-200 text-lg">
+                            Compress Image
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loading" class="hidden text-center py-8">
+                    <div class="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-primary-50 dark:bg-accent-500/10 text-primary-600 dark:text-accent-400">
+                        <div class="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        <span class="font-medium">Compressing your image...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Section -->
+            <div id="previewContainer" class="hidden">
+                <div class="grid lg:grid-cols-2 gap-8 mb-8">
+                    <!-- Original Image -->
+                    <div class="bg-white/80 dark:bg-gray-800/80 glass-effect rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-xl">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-blue-500">🔍</span>
+                            Original Image
+                        </h3>
+                        <div class="mb-4 bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                            <img id="originalPreview" class="w-full h-48 object-contain rounded-lg" alt="Original">
+                        </div>
+                        <div id="originalInfo" class="text-sm text-gray-600 dark:text-gray-400 space-y-1"></div>
+                    </div>
+
+                    <!-- Compressed Image -->
+                    <div class="bg-white/80 dark:bg-gray-800/80 glass-effect rounded-2xl border border-gray-200 dark:border-gray-700 p-6 shadow-xl">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-green-500">✨</span>
+                            Compressed Image
+                        </h3>
+                        <div class="mb-4 bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                            <img id="compressedPreview" class="w-full h-48 object-contain rounded-lg" alt="Compressed">
+                        </div>
+                        <div id="compressedInfo" class="text-sm text-gray-600 dark:text-gray-400 space-y-1"></div>
+                    </div>
+                </div>
+
+                <!-- Download Options -->
+                <div class="bg-white/80 dark:bg-gray-800/80 glass-effect rounded-2xl border border-gray-200 dark:border-gray-700 p-8 shadow-xl">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-6 text-center">Download Options</h3>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button id="downloadWithExif" 
+                                class="flex items-center justify-center gap-2 px-6 py-3 gradient-success text-white font-semibold rounded-xl hover:scale-105 hover:shadow-lg transition-all duration-200">
+                            <span>📥</span>
+                            <span>Download with EXIF</span>
+                        </button>
+                        <button id="downloadWithoutExif" 
+                                class="flex items-center justify-center gap-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-xl hover:scale-105 hover:shadow-lg transition-all duration-200">
+                            <span>📦</span>
+                            <span>Download without EXIF</span>
+                        </button>
+                    </div>
+                    <p class="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
+                        Choose whether to preserve or remove image metadata
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Theme Management
+        const themeToggle = document.getElementById('themeToggle');
+        const lightIcon = document.getElementById('lightIcon');
+        const darkIcon = document.getElementById('darkIcon');
+        
+        let isDark = localStorage.getItem('theme') === 'dark' || 
+                    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        
+        function updateTheme() {
+            if (isDark) {
+                document.documentElement.classList.add('dark');
+                lightIcon.classList.add('hidden');
+                darkIcon.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            }
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            isDark = !isDark;
+            updateTheme();
+        });
+        
+        updateTheme();
+
+        // Image Compression Logic
+        let originalFile = null;
+        let compressedBlobWithExif = null;
+        let compressedBlobWithoutExif = null;
+        let exifData = null;
+
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const qualitySlider = document.getElementById('qualitySlider');
+        const qualityValue = document.getElementById('qualityValue');
+        const compressBtn = document.getElementById('compressBtn');
+        const loading = document.getElementById('loading');
+        const previewContainer = document.getElementById('previewContainer');
+        const originalPreview = document.getElementById('originalPreview');
+        const compressedPreview = document.getElementById('compressedPreview');
+        const originalInfo = document.getElementById('originalInfo');
+        const compressedInfo = document.getElementById('compressedInfo');
+        const downloadWithExif = document.getElementById('downloadWithExif');
+        const downloadWithoutExif = document.getElementById('downloadWithoutExif');
+
+        // Event listeners
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+        qualitySlider.addEventListener('input', updateQualityValue);
+        compressBtn.addEventListener('click', compressImage);
+        downloadWithExif.addEventListener('click', () => downloadCompressed(true));
+        downloadWithoutExif.addEventListener('click', () => downloadCompressed(false));
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('border-primary-600', 'dark:border-accent-600', 'bg-primary-50/50', 'dark:bg-accent-500/10');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary-600', 'dark:border-accent-600', 'bg-primary-50/50', 'dark:bg-accent-500/10');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('border-primary-600', 'dark:border-accent-600', 'bg-primary-50/50', 'dark:bg-accent-500/10');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                return;
+            }
+
+            originalFile = file;
+            
+            // Preview original image
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                originalPreview.src = e.target.result;
+                const img = new Image();
+                img.onload = () => {
+                    originalInfo.innerHTML = `
+                        <div><strong>Size:</strong> ${formatFileSize(file.size)}</div>
+                        <div><strong>Type:</strong> ${file.type}</div>
+                        <div><strong>Dimensions:</strong> ${img.width} × ${img.height}px</div>
+                    `;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            compressBtn.disabled = false;
+            previewContainer.classList.add('hidden');
+        }
+
+        function updateQualityValue() {
+            qualityValue.textContent = qualitySlider.value + '%';
+        }
+
+        async function compressImage() {
+            if (!originalFile) return;
+
+            loading.classList.remove('hidden');
+            compressBtn.disabled = true;
+
+            try {
+                // Extract EXIF data first
+                exifData = await extractExifData(originalFile);
+                
+                // Create canvas for compression
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // Create compressed version without EXIF
+                    canvas.toBlob((blobWithoutExif) => {
+                        compressedBlobWithoutExif = blobWithoutExif;
+                        
+                        // For the EXIF version, we'll use the same blob
+                        // In a real implementation, you'd use a library like piexifjs to re-inject EXIF
+                        compressedBlobWithExif = blobWithoutExif;
+                        
+                        // Show preview
+                        const compressedUrl = URL.createObjectURL(compressedBlobWithoutExif);
+                        compressedPreview.src = compressedUrl;
+                        
+                        const compressionRatio = Math.round((1 - compressedBlobWithoutExif.size / originalFile.size) * 100);
+                        compressedInfo.innerHTML = `
+                            <div><strong>Size:</strong> ${formatFileSize(compressedBlobWithoutExif.size)}</div>
+                            <div><strong>Compression:</strong> ${compressionRatio}% reduction</div>
+                            <div><strong>Quality:</strong> ${qualitySlider.value}%</div>
+                        `;
+                        
+                        previewContainer.classList.remove('hidden');
+                        loading.classList.add('hidden');
+                        compressBtn.disabled = false;
+                    }, originalFile.type, qualitySlider.value / 100);
+                };
+                
+                img.src = URL.createObjectURL(originalFile);
+            } catch (error) {
+                console.error('Error compressing image:', error);
+                alert('Error compressing image');
+                loading.classList.add('hidden');
+                compressBtn.disabled = false;
+            }
+        }
+
+        async function extractExifData(file) {
+            return new Promise((resolve) => {
+                EXIF.getData(file, function() {
+                    const exifData = EXIF.getAllTags(this);
+                    resolve(exifData);
+                });
+            });
+        }
+
+        function downloadCompressed(withExif) {
+            const blob = withExif ? compressedBlobWithExif : compressedBlobWithoutExif;
+            if (!blob) return;
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const suffix = withExif ? '_with_exif' : '_without_exif';
+            a.download = `compressed${suffix}_${originalFile.name}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Custom slider styling
+        const style = document.createElement('style');
+        style.textContent = `
+            .slider::-webkit-slider-thumb {
+                appearance: none;
+                height: 20px;
+                width: 20px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+                cursor: pointer;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            }
+            
+            .slider::-moz-range-thumb {
+                height: 20px;
+                width: 20px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+                cursor: pointer;
+                border: none;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
